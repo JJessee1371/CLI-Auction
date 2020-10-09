@@ -8,37 +8,58 @@ const connection = mysql.createConnection({
     user: 'root',
     port: 3306,
     password: process.env.DB_PASS,
-    database: 'myauction'
+    database: 'myauction_db'
 });
 
-// function start() {
-//     inquirer.prompt([
-//         {
-//             name: 'choose',
-//             type: 'list',
-//             choices: [
-//                 'POST',
-//                 'BID'
-//             ],
-//             message: 'Would you like to post a new item or bid on an existing one?'
-//         }
-//     ])
-//     .then(data => {
-//         if(data.choose == 'POST') {
-//             post();
-//         } else if(data.choose == 'BID') {
-//             bid();
-//         } else process.end();
-//     })
-// };
+function start() {
+    inquirer.prompt([
+        {
+            name: 'choose',
+            type: 'list',
+            choices: [
+                'POST',
+                'BID'
+            ],
+            message: 'Would you like to post a new item or bid on an existing one?'
+        }
+    ])
+    .then(data => {
+        if(data.choose == 'POST') {
+            post();
+        } else if(data.choose == 'BID') {
+            bid();
+        } else process.end();
+    })
+};
 
-// function post() {
+function post() {
+    inquirer.prompt([
+        {
+            name: 'item',
+            type: 'input',
+            message: 'What item would you like to put up for auction?'
+        },
+        {
+            name: 'value',
+            type: 'input',
+            message: 'What will be the minimum bidding amount for this item?'
+        },
+        {
+            name: 'category',
+            type: 'input',
+            message: 'What cateogry does this item fall under?'
+        }
+    ])
+    .then(data => {
+        connection.query(
+            'INSERT INTO auction_items'
+        )
+    })
+};
 
-// };
+function bid() {
 
-// function bid() {
-
-// };
+};
 
 connection.connect(err => {
     if(err) throw err;
