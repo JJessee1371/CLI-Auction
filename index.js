@@ -11,6 +11,19 @@ const connection = mysql.createConnection({
     database: 'myauction_db'
 });
 
+//User validation functions
+function isNum(input) {
+    if(isNaN(input)) {
+        return('This value must be a number!');
+    };
+};
+
+function noVal(input) {
+    if(!input) {
+        return('This field cannot be left blank!');
+    };
+};
+
 //Initializes application and collects user input
 function start() {
     inquirer.prompt([
@@ -43,12 +56,14 @@ function post() {
         {
             name: 'item',
             type: 'input',
-            message: 'What item would you like to put up for auction?'
+            message: 'What item would you like to put up for auction?',
+            validate: noVal
         },
         {
             name: 'value',
             type: 'input',
-            message: 'What will be the minimum bidding amount for this item?'
+            message: 'What will be the minimum bidding amount for this item?',
+            validate: isNum
         },
         {
             name: 'category',
@@ -62,7 +77,8 @@ function post() {
             {
                 item: data.item,
                 value: data.value,
-                category: data.category
+                category: data.category,
+                bid: data.value
             }
         ),
         (err, res) => {
@@ -94,7 +110,8 @@ function bid() {
             {
                 name: 'bid',
                 type: 'input',
-                message: 'How much would you like to bid for this item?'
+                message: 'How much would you like to bid for this item?',
+                validate: isNum
             }
         ])
         .then(data => {
@@ -108,7 +125,7 @@ function bid() {
             if(chosenItem.bid < parseInt(data.bid)) {
                 connection.query(
                     `UPDATE auction_items SET bid=${data.bid} WHERE id=${chosenItem.id}`,
-                    (err, res) => {
+                    (err) => {
                         if(err) throw err;
                         console.log('Bid successfully updated');
                         start();
@@ -116,7 +133,7 @@ function bid() {
                 );
             } else {
                 console.log('The amount you bid was too low');
-                bid();
+                start();
             };
         });
     });
