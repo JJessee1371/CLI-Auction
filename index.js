@@ -1,7 +1,10 @@
 const mysql = require('mysql');
 const inquirer = require('inquirer');
 const util = require('util');
+const cTable = require('console.table');
 require('dotenv').config();
+let queryPromise;
+let closePromise;
 
 //MySQL connection setup
 const connection = mysql.createConnection({
@@ -12,20 +15,19 @@ const connection = mysql.createConnection({
     database: 'myauction_db'
 });
 
-let queryPromise;
-let closePromise;
-
 //User input validation functions
 function isNum(input) {
     if(isNaN(input)) {
         return('This value must be a valid number!');
     };
+    return true;
 };
 
 function noVal(input) {
     if(!input) {
         return('This field cannot be left blank!');
     };
+    return true;
 };
 
 //Initializes application
@@ -45,14 +47,17 @@ async function start() {
 
     if(initial.initChoice === 'Post an item') {
         post();
-    } else if (initial.initChoice === 'Bid on an item') {
+    } else if(initial.initChoice === 'Bid on an item') {
         bid();
+    } else if(initial.initChoice === 'EXIT') {
+        connection.end();
     }
 };
 
 
 //POST new items to the database
 async function post() {
+    const categories = ['Antiques', 'Books', 'Business & Industrial', 'Clothing & Accessories', 'Collectibles', 'Electronics', 'Home & Garden', 'Pet Supplies', 'Sporting Goods', 'Toys & Hobbies', 'Other'];
     let postedItem = await inquirer.prompt([
         {
             name: 'item',
@@ -68,73 +73,60 @@ async function post() {
         },
         {
             name: 'category',
-            type: 'input',
+            type: 'list',
+            choices: categories,
             message: 'What cateogry does this item fall under?',
-            validate: noVal
         }
     ]);
 
-    connection.query('INSERT INTO auction_items SET ?', 
+    await queryPromise('INSERT INTO auction_items SET ?', 
     {
         item: postedItem.item,
         value: postedItem.value,
         category: postedItem.category,
         bid: postedItem.value
     });
+    console.log(`${postedItem.item} successfully posted!`);
+
     start();
 };
 
 
-//Bid on items that are already in the database
-// function bid() {
-//     let query = 'SELECT * FROM auction_items';
-//     connection.query(query, (err, res) => {
-//         if(err) throw err;
+//Bid on items that currently exist in the database
+async function bid() {
+    console.log('Here are the listed items and current bids:');
+    let listed = await queryPromise('SELECT item, bid FROM auction_items');
+    let options = [];
+    listed.forEach(obj => {
+        options.push(obj.item);
+    });
+    console.table(listed);
 
-//         inquirer.prompt([
-//             {
-//                 name: 'choose',
-//                 type: 'rawlist',
-//                 choices: function() {
-//                     let choiceArr = [];
-//                     for(i = 0; i < res.length; i++) {
-//                         choiceArr.push(res[i].item);
-//                     };
-//                     return choiceArr;
-//                 },
-//                 message: 'Please select the item you would like to bid on:'
-//             },
-//             {
-//                 name: 'bid',
-//                 type: 'input',
-//                 message: 'How much would you like to bid for this item?',
-//                 validate: isNum
-//             }
-//         ])
-//         .then(data => {
-//             let chosenItem = '';
-//             res.forEach(obj => {
-//                 if(obj.item === data.choose) {
-//                     chosenItem = obj;
-//                 };
-//             });
+    let itemChoice = await inquirer.prompt([
+        {
+            name: 'item',
+            type: 'list',
+            choices: options,
+            message: 'Please select the item you would like to bid on:'
+        },
+        {
+            name: 'bid',
+            type: 'input',
+            message: 'How much would you like to bid for this item?',
+            validate: isNum
+        }
+    ]);
 
-//             if(chosenItem.bid < parseInt(data.bid)) {
-//                 connection.query(
-//                     `UPDATE auction_items SET bid=${data.bid} WHERE id=${chosenItem.id}`,
-//                     (err) => {
-//                         if(err) throw err;
-//                         console.log('Bid successfully updated');
-//                         start();
-//                     }
-//                 );
-//             } else {
-//                 console.log('The amount you bid was too low');
-//                 start();
-//             };
-//         });
-//     });
-// };
+    let selected = await queryPromise('SELECT bid, id FROM auction_items WHERE ?', {item: itemChoice.item});
+    if(selected[0].bid < parseInt(itemChoice.bid)) {
+        await queryPromise('UPDATE auction_items SET bid = ? WHERE id = ?', [itemChoice.bid, selected[0].id]);
+        console.log(`Bid for ${itemChoice.bid} successfully posted!`);
+        start();
+    } else {
+        console.log(`Your bid must be higher than ${selected[0].bid} please try again`);
+        start();
+    }
+};
 
 
 start();
