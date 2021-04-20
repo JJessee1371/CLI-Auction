@@ -1,8 +1,9 @@
-require('dotenv').config();
 const mysql = require('mysql');
 const inquirer = require('inquirer');
+const util = require('util');
+require('dotenv').config();
 
-//MySQL setup
+//MySQL connection setup
 const connection = mysql.createConnection({
     host: 'localhost',
     user: 'root',
@@ -11,10 +12,13 @@ const connection = mysql.createConnection({
     database: 'myauction_db'
 });
 
-//User validation functions
+let queryPromise;
+let closePromise;
+
+//User input validation functions
 function isNum(input) {
     if(isNaN(input)) {
-        return('This value must be a number!');
+        return('This value must be a valid number!');
     };
 };
 
@@ -24,35 +28,32 @@ function noVal(input) {
     };
 };
 
-//Initializes application and collects user input
-function start() {
-    inquirer.prompt([
+//Initializes application
+async function start() {
+    let initial = await inquirer.prompt([
         {
-            name: 'choose',
+            name: 'initChoice',
             type: 'list',
             choices: [
-                'POST',
-                'BID',
+                'Post an item',
+                'Bid on an item',
                 'EXIT'
             ],
             message: 'Would you like to post a new item or bid on an existing one?'
         }
-    ])
-    .then(data => {
-        if(data.choose == 'POST') {
-            post();
-        } else if(data.choose == 'BID') {
-            bid();
-        } else process.end();
-    })
-    .catch(err => {
-        if(err) throw err;
-    });
+    ]);
+
+    if(initial.initChoice === 'Post an item') {
+        post();
+    } else if (initial.initChoice === 'Bid on an item') {
+        bid();
+    }
 };
 
+
 //POST new items to the database
-function post() {
-    inquirer.prompt([
+async function post() {
+    let postedItem = await inquirer.prompt([
         {
             name: 'item',
             type: 'input',
@@ -68,86 +69,83 @@ function post() {
         {
             name: 'category',
             type: 'input',
-            message: 'What cateogry does this item fall under?'
+            message: 'What cateogry does this item fall under?',
+            validate: noVal
         }
-    ])
-    .then(data => {
-        connection.query(
-            'INSERT INTO auction_items SET ?',
-            {
-                item: data.item,
-                value: data.value,
-                category: data.category,
-                bid: data.value
-            }
-        ),
-        (err, res) => {
-            if(err) throw err;
-        };
-        start();
+    ]);
+
+    connection.query('INSERT INTO auction_items SET ?', 
+    {
+        item: postedItem.item,
+        value: postedItem.value,
+        category: postedItem.category,
+        bid: postedItem.value
     });
+    start();
 };
+
 
 //Bid on items that are already in the database
-function bid() {
-    let query = 'SELECT * FROM auction_items';
-    connection.query(query, (err, res) => {
-        if(err) throw err;
+// function bid() {
+//     let query = 'SELECT * FROM auction_items';
+//     connection.query(query, (err, res) => {
+//         if(err) throw err;
 
-        inquirer.prompt([
-            {
-                name: 'choose',
-                type: 'rawlist',
-                choices: function() {
-                    let choiceArr = [];
-                    for(i = 0; i < res.length; i++) {
-                        choiceArr.push(res[i].item);
-                    };
-                    return choiceArr;
-                },
-                message: 'Please select the item you would like to bid on:'
-            },
-            {
-                name: 'bid',
-                type: 'input',
-                message: 'How much would you like to bid for this item?',
-                validate: isNum
-            }
-        ])
-        .then(data => {
-            let chosenItem = '';
-            res.forEach(obj => {
-                if(obj.item === data.choose) {
-                    chosenItem = obj;
-                };
-            });
+//         inquirer.prompt([
+//             {
+//                 name: 'choose',
+//                 type: 'rawlist',
+//                 choices: function() {
+//                     let choiceArr = [];
+//                     for(i = 0; i < res.length; i++) {
+//                         choiceArr.push(res[i].item);
+//                     };
+//                     return choiceArr;
+//                 },
+//                 message: 'Please select the item you would like to bid on:'
+//             },
+//             {
+//                 name: 'bid',
+//                 type: 'input',
+//                 message: 'How much would you like to bid for this item?',
+//                 validate: isNum
+//             }
+//         ])
+//         .then(data => {
+//             let chosenItem = '';
+//             res.forEach(obj => {
+//                 if(obj.item === data.choose) {
+//                     chosenItem = obj;
+//                 };
+//             });
 
-            if(chosenItem.bid < parseInt(data.bid)) {
-                connection.query(
-                    `UPDATE auction_items SET bid=${data.bid} WHERE id=${chosenItem.id}`,
-                    (err) => {
-                        if(err) throw err;
-                        console.log('Bid successfully updated');
-                        start();
-                    }
-                );
-            } else {
-                console.log('The amount you bid was too low');
-                start();
-            };
-        });
-    });
-};
+//             if(chosenItem.bid < parseInt(data.bid)) {
+//                 connection.query(
+//                     `UPDATE auction_items SET bid=${data.bid} WHERE id=${chosenItem.id}`,
+//                     (err) => {
+//                         if(err) throw err;
+//                         console.log('Bid successfully updated');
+//                         start();
+//                     }
+//                 );
+//             } else {
+//                 console.log('The amount you bid was too low');
+//                 start();
+//             };
+//         });
+//     });
+// };
 
 
 start();
 
 connection.connect(err => {
-    if(err) throw err;
+    if(err) console.log(err);
+    queryPromise = util.promisify(connection.query).bind(connection);
+    closePromise = util.promisify(connection.end).bind(connection);
     console.log(`Connected as ID ${connection.threadId}`);
 });
 
-process.on('exit', function(code) {
-    connection.end();
-    return console.log(`About to exit with code ${code}`);
+process.on('beforeExit', () => {
+    closePromise();
 });
