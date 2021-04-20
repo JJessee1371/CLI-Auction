@@ -37,7 +37,66 @@ function length(input) {
     return true;
 };
 
-//User login
+
+//New users sign up for an account
+async function signup() {
+    let newUser = await inquirer.prompt([
+        {
+            name: 'username',
+            type: 'input',
+            message: 'Please enter a username for your account:',
+            validate: length
+        },
+        {
+            name: 'password',
+            type: 'input',
+            message: 'Please enter a password for your account:',
+            validate: length
+        }
+    ]);
+
+    //Determine whether or not the username already exists in the DB and take appropriate action
+    let user = await queryPromise('SELECT userid FROM users WHERE ?', {username: newUser.username});
+    if(user.length > 0) {
+        console.log('That username is already in use, please enter another!');
+        signup();
+    } else {
+        await queryPromise('INSERT INTO users SET ?',
+        {
+            username: newUser.username,
+            password: newUser.password
+        });
+        console.log('Congratulations you have registered for an account!');
+        start();
+    }
+};
+
+//Users login if they have already registered for an account
+async function login() {
+    let existingUser = await inquirer.prompt([
+        {
+            name: 'username',
+            type: 'input',
+            message: 'Please enter your username:'
+        },
+        {
+            name: 'password',
+            type: 'input',
+            message: 'Please enter your password:'
+        }
+    ]);
+
+    let user = await queryPromise('SELECT userid FROM users WHERE username = ? AND password = ?', 
+    [existingUser.username, existingUser.password]);
+    if(user.length === 0) {
+        console.log('We could not locate an account with the given information, please try again!');
+        init();
+    } else {
+        start();
+    }
+};
+
+//Initialize the login/signup process before proceeding
 async function init() {
     let signupStatus = await inquirer.prompt([
         {
@@ -48,34 +107,13 @@ async function init() {
     ]);
 
     if(!signupStatus.login) {
-        let newUser = await inquirer.prompt([
-            {
-                name: 'username',
-                type: 'input',
-                message: 'Please enter a username for your account:',
-                validate: length
-            },
-            {
-                name: 'password',
-                type: 'input',
-                message: 'Please enter a password for your account:',
-                validate: length
-            }
-        ]);
-
-        await queryPromise('INSERT INTO users SET ?',
-        {
-            username: newUser.username,
-            password: newUser.password
-        });
-        console.log('Congratulations you have registered for an account!');
-        start();
+        signup();
     } else {
-
+        login();
     }
 };
 
-//Initializes application
+//User is logged in and can begin bidding/posting
 async function start() {
     let initial = await inquirer.prompt([
         {
