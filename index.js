@@ -30,6 +30,51 @@ function noVal(input) {
     return true;
 };
 
+function length(input) {
+    if(input.length > 20) {
+        return ('This field cannot be longer than 20 characters!');
+    }
+    return true;
+};
+
+//User login
+async function init() {
+    let signupStatus = await inquirer.prompt([
+        {
+            name: 'login',
+            type: 'confirm',
+            message: 'Do you already have an accout?'
+        }
+    ]);
+
+    if(!signupStatus.login) {
+        let newUser = await inquirer.prompt([
+            {
+                name: 'username',
+                type: 'input',
+                message: 'Please enter a username for your account:',
+                validate: length
+            },
+            {
+                name: 'password',
+                type: 'input',
+                message: 'Please enter a password for your account:',
+                validate: length
+            }
+        ]);
+
+        await queryPromise('INSERT INTO users SET ?',
+        {
+            username: newUser.username,
+            password: newUser.password
+        });
+        console.log('Congratulations you have registered for an account!');
+        start();
+    } else {
+
+    }
+};
+
 //Initializes application
 async function start() {
     let initial = await inquirer.prompt([
@@ -129,13 +174,12 @@ async function bid() {
 };
 
 
-start();
+init();
 
 connection.connect(err => {
     if(err) console.log(err);
     queryPromise = util.promisify(connection.query).bind(connection);
     closePromise = util.promisify(connection.end).bind(connection);
-    console.log(`Connected as ID ${connection.threadId}`);
 });
 
 process.on('beforeExit', () => {
