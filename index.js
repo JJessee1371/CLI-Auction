@@ -86,6 +86,7 @@ async function login() {
         }
     ]);
 
+    //Determine if account with given information exists and prcoeed to necessary action
     let user = await queryPromise('SELECT userid FROM users WHERE username = ? AND password = ?', 
     [existingUser.username, existingUser.password]);
     if(user.length === 0) {
@@ -120,7 +121,7 @@ async function start() {
             name: 'initChoice',
             type: 'list',
             choices: [
-                'Post an item',
+                'Manage and create your posts',
                 'Bid on an item',
                 'EXIT'
             ],
@@ -128,50 +129,13 @@ async function start() {
         }
     ]);
 
-    if(initial.initChoice === 'Post an item') {
+    if(initial.initChoice === 'Manage and create your posts') {
         post();
     } else if(initial.initChoice === 'Bid on an item') {
         bid();
     } else if(initial.initChoice === 'EXIT') {
         connection.end();
     }
-};
-
-
-//POST new items to the database
-async function post() {
-    const categories = ['Antiques', 'Books', 'Business & Industrial', 'Clothing & Accessories', 'Collectibles', 'Electronics', 'Home & Garden', 'Pet Supplies', 'Sporting Goods', 'Toys & Hobbies', 'Other'];
-    let postedItem = await inquirer.prompt([
-        {
-            name: 'item',
-            type: 'input',
-            message: 'What item would you like to put up for auction?',
-            validate: noVal
-        },
-        {
-            name: 'value',
-            type: 'input',
-            message: 'What will be the minimum bidding amount for this item?',
-            validate: isNum
-        },
-        {
-            name: 'category',
-            type: 'list',
-            choices: categories,
-            message: 'What cateogry does this item fall under?',
-        }
-    ]);
-
-    await queryPromise('INSERT INTO auction_items SET ?', 
-    {
-        item: postedItem.item,
-        value: postedItem.value,
-        category: postedItem.category,
-        bid: postedItem.value
-    });
-    console.log(`${postedItem.item} successfully posted!`);
-
-    start();
 };
 
 
@@ -214,6 +178,7 @@ async function bid() {
 
 init();
 
+//Promisify queries and establish database connection
 connection.connect(err => {
     if(err) console.log(err);
     queryPromise = util.promisify(connection.query).bind(connection);
