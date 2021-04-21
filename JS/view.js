@@ -3,7 +3,6 @@ const inquirer = require('inquirer');
 const cTable = require('console.table');
 const util = require('util');
 const loggedIn = require('../index');
-const validate = require('./validate');
 const bid = require('./bid');
 require('dotenv').config();
 let queryPromise;

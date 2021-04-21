@@ -1,7 +1,6 @@
 const mysql = require('mysql');
 const inquirer = require('inquirer');
 const util = require('util');
-const cTable = require('console.table');
 require('dotenv').config();
 const validate = require('./JS/validate');
 const post = require('./JS/post');
