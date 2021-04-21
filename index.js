@@ -4,6 +4,7 @@ const util = require('util');
 const cTable = require('console.table');
 require('dotenv').config();
 const post = require('./JS/post');
+const bid = require('./JS/bid');
 let queryPromise;
 let closePromise;
 let currentUser;
@@ -21,13 +22,6 @@ const connection = mysql.createConnection({
 
 //User input validation functions
 //=============================//
-function isNum(input) {
-    if(isNaN(input)) {
-        return('This value must be a valid number!');
-    };
-    return true;
-};
-
 function noVal(input) {
     if(!input) {
         return('This field cannot be left blank!');
@@ -77,6 +71,7 @@ async function signup() {
     }
 };
 
+
 //Users login if they have already registered for an account
 //============================================================//
 async function login() {
@@ -85,12 +80,14 @@ async function login() {
         {
             name: 'username',
             type: 'input',
-            message: 'Please enter your username:'
+            message: 'Please enter your username:',
+            validate: noVal
         },
         {
             name: 'password',
             type: 'input',
-            message: 'Please enter your password:'
+            message: 'Please enter your password:',
+            validate: noVal
         }
     ]);
 
@@ -104,6 +101,7 @@ async function login() {
         start(user);
     }
 };
+
 
 //Initialize the login/signup process before proceeding
 //=======================================================//
@@ -123,6 +121,7 @@ async function init() {
     }
 };
 
+
 //User is logged in and can begin bidding/posting
 //================================================//
 async function start(user) {
@@ -135,7 +134,7 @@ async function start(user) {
                 'Bid on an item',
                 'EXIT'
             ],
-            message: 'Would you like to post a new item or bid on an existing one?'
+            message: 'Please select your desired action:'
         }
     ]);
 
@@ -146,48 +145,12 @@ async function start(user) {
             start();
             break;
         case 'Bid on an item':
-            await bid();
+            await bid.makeBid(user);
+            start();
             break;
         case 'EXIT':
             connection.end();
-    }
-};
-
-
-//Bid on items that currently exist in the database
-//===================================================//
-async function bid() {
-    console.log('Here are the listed items and current bids:');
-    let listed = await queryPromise('SELECT item, bid FROM auction_items');
-    let options = [];
-    listed.forEach(obj => {
-        options.push(obj.item);
-    });
-    console.table(listed);
-
-    let itemChoice = await inquirer.prompt([
-        {
-            name: 'item',
-            type: 'list',
-            choices: options,
-            message: 'Please select the item you would like to bid on:'
-        },
-        {
-            name: 'bid',
-            type: 'input',
-            message: 'How much would you like to bid for this item?',
-            validate: isNum
-        }
-    ]);
-
-    let selected = await queryPromise('SELECT bid, id FROM auction_items WHERE ?', {item: itemChoice.item});
-    if(selected[0].bid < parseInt(itemChoice.bid)) {
-        await queryPromise('UPDATE auction_items SET bid = ? WHERE id = ?', [itemChoice.bid, selected[0].id]);
-        console.log(`Bid for ${itemChoice.bid} successfully posted!`);
-        start();
-    } else {
-        console.log(`Your bid must be higher than ${selected[0].bid} please try again`);
-        start();
+            break;
     }
 };
 
