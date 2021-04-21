@@ -16,8 +16,9 @@ CREATE TABLE auction_items (
     value DECIMAL(10,2) NOT NULL,
     category VARCHAR(100) NULL,
     bid DECIMAL(10,2) NULL,
+    topBidder VARCHAR(20) DEFAULT NULL,
     closed BOOLEAN DEFAULT FALSE,
     userid INT,
         FOREIGN KEY (userid) REFERENCES users (userid),
-    PRIMARY KEY (id)
+	PRIMARY KEY (id)
 );

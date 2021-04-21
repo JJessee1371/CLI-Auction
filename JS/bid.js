@@ -41,10 +41,8 @@ module.exports = {
     makeBid:
     async function create() {
         console.log('Here are all active auctions:');
-        let listed = await queryPromise(`SELECT id AS Item_Id, item AS Item, bid AS Current_Bid, category AS Category, username AS Top_Bidder
-        FROM auction_items AS tbl1
-        JOIN users AS tbl2 ON tbl1.userid = tbl2.userid
-        WHERE tbl1.closed = ?`, [false]);
+        let listed = await queryPromise(`SELECT id AS Item_Id, item AS Item, bid AS Current_Bid, category AS Category, topBidder AS Top_Bidder
+        FROM auction_items WHERE ?`, {closed: false});
         console.table(listed);
     
         let itemChoice = await inquirer.prompt([
@@ -66,7 +64,7 @@ module.exports = {
     
         let selected = await queryPromise('SELECT bid FROM auction_items WHERE ?', {id: itemChoice.item});
         if(selected[0].bid < parseInt(itemChoice.bid)) {
-            await queryPromise('UPDATE auction_items SET bid = ?, userid = ? WHERE id = ?', [itemChoice.bid, loggedIn.currentUser, itemChoice.item]);
+            await queryPromise('UPDATE auction_items SET bid = ?, topBidder = ? WHERE id = ?', [itemChoice.bid, loggedIn.currentUser.name, itemChoice.item]);
             console.log(`Bid for ${itemChoice.bid} successfully posted!`);
         } else {
             console.log(`Your bid must be higher than ${selected[0].bid} please try again`);

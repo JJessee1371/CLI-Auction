@@ -2,6 +2,7 @@ const mysql = require('mysql');
 const inquirer = require('inquirer');
 const cTable = require('console.table');
 const util = require('util');
+const loggedIn = require('../index');
 require('dotenv').config();
 let queryPromise;
 let closePromise;
@@ -36,7 +37,7 @@ function noVal(input) {
 
 //Post a new item to the database
 //=================================//
-async function postItem(user) {
+async function postItem() {
     let postedItem = await inquirer.prompt([
         {
             name: 'item',
@@ -64,7 +65,7 @@ async function postItem(user) {
         value: postedItem.value,
         category: postedItem.category,
         bid: postedItem.value,
-        userid: user[0].userid
+        userid: loggedIn.currentUser.id
     });
     console.log(`${postedItem.item} successfully posted!`);
 };
@@ -72,19 +73,32 @@ async function postItem(user) {
 
 //Retrieve all posts from the database that the user has created
 //================================================================//
-async function viewPosts(user) {
-    let userPosts = await queryPromise(`SELECT id AS 'Item ID', item AS Item, category AS Category, bid AS Bid, username AS Username
+async function viewPosts() {
+    let userPosts = await queryPromise(`SELECT id AS Item_ID, item AS Item, category AS Category, bid AS Bid, topBidder AS Top_Bidder, username AS Username
     FROM auction_items AS tbl1
     JOIN users AS tbl2 ON tbl1.userid = tbl2.userid
-    WHERE tbl1.userid = ?`, [user[0].userid]);
-    console.log('Here are all of your listed posts:');
-    console.table(userPosts);
+    WHERE tbl1.userid = ?`, [loggedIn.currentUser.id]);
+    if(userPosts.length === 0) {
+        let makePost = await inquirer.prompt([
+            {
+                name: 'create',
+                type: 'confirm',
+                message: 'It looks like you haven\'t created any, would you like to?'
+            }
+        ]);
+
+        console.log('DECISION: ' + makePost.create);
+        return (makePost.create ? postItem() : console.log('No problem!'));
+    } else {
+        console.log('Here are all of your listed posts:');
+        console.table(userPosts);
+    }
 };
 
 
 //Users can modify previously posted items as needed
 //===================================================//
-async function modifyPost(user) {
+async function modifyPost() {
     let confirm = await inquirer.prompt([
         {
             name: 'itemid',
@@ -96,7 +110,7 @@ async function modifyPost(user) {
     //Retrieve the item ID or update the entry
     if(!confirm.itemid) {
         console.log('Please locate the item ID below:');
-        await viewPosts(user);
+        await viewPosts();
     } else {
         let updatedItem = await inquirer.prompt([
             {
@@ -127,7 +141,7 @@ async function modifyPost(user) {
 
         await queryPromise(`UPDATE auction_items SET item = ?, value = ?, bid = ?, category = ?, userid = ?
         WHERE id = ?`,
-        [updatedItem.item, updatedItem.value, updatedItem.value, updatedItem.category, user[0].userid, updatedItem.id]);
+        [updatedItem.item, updatedItem.value, updatedItem.value, updatedItem.category, loggedIn.currentUser.id, updatedItem.id]);
         console.log('The entry has been successfully updated!');
     }
 };
@@ -147,7 +161,7 @@ async function closeBidding() {
     //Retreive the item ID or update the status
     if(!confirm.itemid) {
         console.log('Please locate the item ID below:');
-        await viewPosts(user);
+        await viewPosts();
     } else {
         let toClose = await inquirer.prompt([
             {
@@ -161,7 +175,7 @@ async function closeBidding() {
         await queryPromise('UPDATE auction_items SET closed = true WHERE ?', {id: toClose.id});
         let finalOffer = await queryPromise('SELECT bid, userid FROM auction_items WHERE ?', {id: toClose.id});
         //[ RowDataPacket { bid: 75, userid: 4 } ]
-        let finalBidder = await queryPromise('SELECT username FROM users WHERE ?', {userid: finalOffer[0].userid});
+        let finalBidder = await queryPromise('SELECT topBidder FROM auction_items WHERE ?', {id: toClose.id});
         console.log(`Congratulations! Your final offer of ${finalOffer[0].bid} came from user ${finalBidder}`);
     }
 };
@@ -171,7 +185,7 @@ async function closeBidding() {
 //=============================================================//
 module.exports = {
     managePosts:
-    async function(user) {
+    async function() {
         let userChoice = await inquirer.prompt([
             {
                 name: 'choice',
@@ -184,13 +198,13 @@ module.exports = {
         let action = userChoice.choice;
         switch(action) {
             case 'Post an item':
-                await postItem(user);
+                await postItem();
                 break;
             case 'View all my posts':
-                await viewPosts(user);
+                await viewPosts();
                 break;
             case 'Modify a previous post':
-                await modifyPost(user);
+                await modifyPost();
                 break;
             case 'Close bidding on a post':
                 await closeBidding();

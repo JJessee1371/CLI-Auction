@@ -92,12 +92,16 @@ async function login() {
     //Determine if account with given information exists and prcoeed to necessary action
     let user = await queryPromise('SELECT userid FROM users WHERE username = ? AND password = ?', 
     [existingUser.username, existingUser.password]);
+    console.log(user);
     if(user.length === 0) {
         console.log('We could not locate an account with the given information, please try again!');
         init();
     } else {
-        //Export user ID to attach to their future actions
-        module.exports.currentUser = user[0].userid;
+        //Export user ID/username to attach to their future actions
+        module.exports.currentUser = {
+            id: user[0].userid,
+            name: existingUser.username
+        };
         start();
     }
 };
