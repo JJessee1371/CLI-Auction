@@ -101,9 +101,6 @@ async function login() {
         console.log('We could not locate an account with the given information, please try again!');
         init();
     } else {
-        console.log('USERS ID IS: ' + JSON.stringify(user[0].userid));
-        // currentUser = user;
-        // testing = 'testing again';
         start(user);
     }
 };

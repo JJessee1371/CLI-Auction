@@ -5,6 +5,7 @@ const util = require('util');
 require('dotenv').config();
 let queryPromise;
 let closePromise;
+const categories = ['Antiques', 'Books', 'Business & Industrial', 'Clothing & Accessories', 'Collectibles', 'Electronics', 'Home & Garden', 'Pet Supplies', 'Sporting Goods', 'Toys & Hobbies', 'Other'];
 
 //MySQL connection setup
 //=======================//
@@ -52,7 +53,7 @@ async function postItem(user) {
         {
             name: 'category',
             type: 'list',
-            choices: ['Antiques', 'Books', 'Business & Industrial', 'Clothing & Accessories', 'Collectibles', 'Electronics', 'Home & Garden', 'Pet Supplies', 'Sporting Goods', 'Toys & Hobbies', 'Other'],
+            choices: categories,
             message: 'What cateogry does this item fall under?',
         }
     ]);
@@ -72,12 +73,97 @@ async function postItem(user) {
 //Retrieve all posts from the database that the user has created
 //================================================================//
 async function viewPosts(user) {
-    let userPosts = await queryPromise(`SELECT item AS Item, category AS Category, bid AS Bid, username AS Username
+    let userPosts = await queryPromise(`SELECT id AS 'Item ID', item AS Item, category AS Category, bid AS Bid, username AS Username
     FROM auction_items AS tbl1
     JOIN users AS tbl2 ON tbl1.userid = tbl2.userid
     WHERE tbl1.userid = ?`, [user[0].userid]);
     console.log('Here are all of your listed posts:');
     console.table(userPosts);
+};
+
+
+//Users can modify previously posted items as needed
+//===================================================//
+async function modifyPost(user) {
+    let confirm = await inquirer.prompt([
+        {
+            name: 'itemid',
+            type: 'confirm',
+            message: 'Do you know the item ID number?'
+        }
+    ]);
+
+    //Retrieve the item ID or update the entry
+    if(!confirm.itemid) {
+        console.log('Please locate the item ID below:');
+        await viewPosts(user);
+    } else {
+        let updatedItem = await inquirer.prompt([
+            {
+                name: 'id',
+                type: 'input',
+                message: 'What is the items\' id?',
+                validate: noVal
+            },
+            {
+                name: 'item',
+                type: 'input',
+                message: 'Please reconfirm the item name to be listed.',
+                validate: noVal
+            },
+            {
+                name: 'category',
+                type: 'list',
+                message: 'Please reconfirm the items\' category.',
+                choices: categories
+            },
+            {
+                name: 'value',
+                type: 'input',
+                message: 'What is this items value? Note: This will restart all bidding.',
+                validate: noVal
+            }
+        ]);
+
+        await queryPromise(`UPDATE auction_items SET item = ?, value = ?, bid = ?, category = ?, userid = ?
+        WHERE id = ?`,
+        [updatedItem.item, updatedItem.value, updatedItem.value, updatedItem.category, user[0].userid, updatedItem.id]);
+        console.log('The entry has been successfully updated!');
+    }
+};
+
+
+//Users can close bidding for a given item
+//==========================================//
+async function closeBidding() {
+    let confirm = await inquirer.prompt([
+        {
+            name: 'itemid',
+            type: 'confirm',
+            message: 'Do you know the item ID number?'
+        }
+    ]);
+
+    //Retreive the item ID or update the status
+    if(!confirm.itemid) {
+        console.log('Please locate the item ID below:');
+        await viewPosts(user);
+    } else {
+        let toClose = await inquirer.prompt([
+            {
+                name: 'id',
+                type: 'input',
+                message: 'Enter the item ID to close bidding.',
+                validate: noVal
+            }
+        ]);
+
+        await queryPromise('UPDATE auction_items SET closed = true WHERE ?', {id: toClose.id});
+        let finalOffer = await queryPromise('SELECT bid, userid FROM auction_items WHERE ?', {id: toClose.id});
+        //[ RowDataPacket { bid: 75, userid: 4 } ]
+        let finalBidder = await queryPromise('SELECT username FROM users WHERE ?', {userid: finalOffer[0].userid});
+        console.log(`Congratulations! Your final offer of ${finalOffer[0].bid} came from user ${finalBidder}`);
+    }
 };
 
 
@@ -102,6 +188,12 @@ module.exports = {
                 break;
             case 'View all my posts':
                 await viewPosts(user);
+                break;
+            case 'Modify a previous post':
+                await modifyPost(user);
+                break;
+            case 'Close bidding on a post':
+                await closeBidding();
                 break;
         }
     }
