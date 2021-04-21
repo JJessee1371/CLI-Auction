@@ -3,6 +3,7 @@ const inquirer = require('inquirer');
 const util = require('util');
 const cTable = require('console.table');
 require('dotenv').config();
+const validate = require('./JS/validate');
 const post = require('./JS/post');
 const bid = require('./JS/bid');
 let queryPromise;
@@ -18,22 +19,6 @@ const connection = mysql.createConnection({
     database: 'myauction_db'
 });
 
-//User input validation functions
-//=============================//
-function noVal(input) {
-    if(!input) {
-        return('This field cannot be left blank!');
-    };
-    return true;
-};
-
-function length(input) {
-    if(input.length > 20) {
-        return ('This field cannot be longer than 20 characters!');
-    }
-    return true;
-};
-
 
 //New users sign up for an account
 //===================================//
@@ -43,13 +28,13 @@ async function signup() {
             name: 'username',
             type: 'input',
             message: 'Please enter a username for your account:',
-            validate: length
+            validate: validate.checkLength
         },
         {
             name: 'password',
             type: 'input',
             message: 'Please enter a password for your account:',
-            validate: length
+            validate: validate.checkLength
         }
     ]);
 
@@ -79,13 +64,13 @@ async function login() {
             name: 'username',
             type: 'input',
             message: 'Please enter your username:',
-            validate: noVal
+            validate: validate.checkValue
         },
         {
             name: 'password',
             type: 'input',
             message: 'Please enter your password:',
-            validate: noVal
+            validate: validate.checkValue
         }
     ]);
 

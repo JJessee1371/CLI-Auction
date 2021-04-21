@@ -3,6 +3,7 @@ const inquirer = require('inquirer');
 const cTable = require('console.table');
 const util = require('util');
 const loggedIn = require('../index');
+const validate = require('./validate');
 require('dotenv').config();
 let queryPromise;
 let closePromise;
@@ -18,22 +19,6 @@ const connection = mysql.createConnection({
     database: 'myauction_db'
 });
 
-//User input validation functions
-//==================================//
-function isNum(input) {
-    if(isNaN(input)) {
-        return('This value must be a valid number!');
-    };
-    return true;
-};
-
-function noVal(input) {
-    if(!input) {
-        return('This field cannot be left blank!');
-    };
-    return true;
-};
-
 
 //Post a new item to the database
 //=================================//
@@ -43,13 +28,13 @@ async function postItem() {
             name: 'item',
             type: 'input',
             message: 'What item would you like to put up for auction?',
-            validate: noVal
+            validate: validate.checkValue
         },
         {
             name: 'value',
             type: 'input',
             message: 'What will be the minimum bidding amount for this item?',
-            validate: isNum
+            validate: validate.checkNumber
         },
         {
             name: 'category',
@@ -117,13 +102,13 @@ async function modifyPost() {
                 name: 'id',
                 type: 'input',
                 message: 'What is the items\' id?',
-                validate: noVal
+                validate: validate.checkValue
             },
             {
                 name: 'item',
                 type: 'input',
                 message: 'Please reconfirm the item name to be listed.',
-                validate: noVal
+                validate: validate.checkValue
             },
             {
                 name: 'category',
@@ -135,7 +120,7 @@ async function modifyPost() {
                 name: 'value',
                 type: 'input',
                 message: 'What is this items value? Note: This will restart all bidding.',
-                validate: noVal
+                validate: validate.checkValue
             }
         ]);
 
@@ -168,7 +153,7 @@ async function closeBidding() {
                 name: 'id',
                 type: 'input',
                 message: 'Enter the item ID to close bidding.',
-                validate: noVal
+                validate: validate.checkValue
             }
         ]);
 

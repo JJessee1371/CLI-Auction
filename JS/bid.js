@@ -3,6 +3,7 @@ const inquirer = require('inquirer');
 const cTable = require('console.table');
 const util = require('util');
 const loggedIn = require('../index');
+const validate = require('./validate');
 require('dotenv').config();
 let queryPromise;
 let closePromise;
@@ -16,23 +17,6 @@ const connection = mysql.createConnection({
     password: process.env.DB_PASS,
     database: 'myauction_db'
 });
-
-
-//User input validation functions
-//=================================//
-function isNum(input) {
-    if(isNaN(input)) {
-        return('This value must be a valid number!');
-    };
-    return true;
-};
-
-function noVal(input) {
-    if(!input) {
-        return('This field cannot be left blank!');
-    };
-    return true;
-};
 
 
 //Bidding functionality exported to index file
@@ -58,7 +42,7 @@ module.exports = {
                 name: 'bid',
                 type: 'input',
                 message: 'How much would you like to bid for this item?',
-                validate: isNum
+                validate: validate.checkNumber
             }
         ]);
     
