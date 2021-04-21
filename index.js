@@ -7,8 +7,6 @@ const post = require('./JS/post');
 const bid = require('./JS/bid');
 let queryPromise;
 let closePromise;
-let currentUser;
-let testing;
 
 //MySQL connection setup
 //=============================//
@@ -98,7 +96,9 @@ async function login() {
         console.log('We could not locate an account with the given information, please try again!');
         init();
     } else {
-        start(user);
+        //Export user ID to attach to their future actions
+        module.exports.currentUser = user[0].userid;
+        start();
     }
 };
 
@@ -124,7 +124,7 @@ async function init() {
 
 //User is logged in and can begin bidding/posting
 //================================================//
-async function start(user) {
+async function start() {
     let initial = await inquirer.prompt([
         {
             name: 'initChoice',
@@ -141,11 +141,11 @@ async function start(user) {
     let choice = initial.initChoice;
     switch(choice) {
         case 'Manage and create your posts':
-            await post.managePosts(user);
+            await post.managePosts();
             start();
             break;
         case 'Bid on an item':
-            await bid.makeBid(user);
+            await bid.makeBid();
             start();
             break;
         case 'EXIT':
@@ -166,6 +166,3 @@ connection.connect(err => {
 process.on('beforeExit', () => {
     closePromise();
 });
-
-module.exports.currentUser = currentUser;
-module.exports.testVal = testing;

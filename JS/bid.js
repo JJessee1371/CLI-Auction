@@ -2,6 +2,7 @@ const mysql = require('mysql');
 const inquirer = require('inquirer');
 const cTable = require('console.table');
 const util = require('util');
+const loggedIn = require('../index');
 require('dotenv').config();
 let queryPromise;
 let closePromise;
@@ -38,24 +39,21 @@ function noVal(input) {
 //===============================================//
 module.exports = {
     makeBid:
-    async function create(user) {
-        console.log('Here are the listed items and current bids:');
-        let listed = await queryPromise(`SELECT id AS Item_Id, item AS Item, bid AS 'Current Bid', category AS Category, username AS 'Top Bidder'
+    async function create() {
+        console.log('Here are all active auctions:');
+        let listed = await queryPromise(`SELECT id AS Item_Id, item AS Item, bid AS Current_Bid, category AS Category, username AS Top_Bidder
         FROM auction_items AS tbl1
         JOIN users AS tbl2 ON tbl1.userid = tbl2.userid
         WHERE tbl1.closed = ?`, [false]);
         console.table(listed);
-
-        let idOptions = [];
-        listed.forEach(obj => {
-            options.push(obj.Item_Id);
-        });
     
         let itemChoice = await inquirer.prompt([
             {
                 name: 'item',
                 type: 'list',
-                choices: idOptions,
+                choices: listed.map(obj => {
+                    return obj.Item_Id;
+                }),
                 message: 'Please select the ID of the item you would like to bid on:'
             },
             {
@@ -68,7 +66,7 @@ module.exports = {
     
         let selected = await queryPromise('SELECT bid FROM auction_items WHERE ?', {id: itemChoice.item});
         if(selected[0].bid < parseInt(itemChoice.bid)) {
-            await queryPromise('UPDATE auction_items SET bid = ?, userid = ? WHERE id = ?', [itemChoice.bid, user[0].userid, itemChoice.item]);
+            await queryPromise('UPDATE auction_items SET bid = ?, userid = ? WHERE id = ?', [itemChoice.bid, loggedIn.currentUser, itemChoice.item]);
             console.log(`Bid for ${itemChoice.bid} successfully posted!`);
         } else {
             console.log(`Your bid must be higher than ${selected[0].bid} please try again`);
