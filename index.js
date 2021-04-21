@@ -6,6 +6,7 @@ require('dotenv').config();
 const validate = require('./JS/validate');
 const post = require('./JS/post');
 const bid = require('./JS/bid');
+const view = require('./JS/view');
 let queryPromise;
 let closePromise;
 
@@ -77,7 +78,6 @@ async function login() {
     //Determine if account with given information exists and prcoeed to necessary action
     let user = await queryPromise('SELECT userid FROM users WHERE username = ? AND password = ?', 
     [existingUser.username, existingUser.password]);
-    console.log(user);
     if(user.length === 0) {
         console.log('We could not locate an account with the given information, please try again!');
         init();
@@ -119,8 +119,9 @@ async function start() {
             name: 'initChoice',
             type: 'list',
             choices: [
-                'Manage and create your posts',
+                'Manage, view, and create posts',
                 'Bid on an item',
+                'View bids you are winning',
                 'EXIT'
             ],
             message: 'Please select your desired action:'
@@ -135,6 +136,10 @@ async function start() {
             break;
         case 'Bid on an item':
             await bid.makeBid();
+            start();
+            break;
+        case 'View bids you are winning':
+            await view.winning();
             start();
             break;
         case 'EXIT':

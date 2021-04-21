@@ -68,11 +68,9 @@ async function viewPosts() {
             {
                 name: 'create',
                 type: 'confirm',
-                message: 'It looks like you haven\'t created any, would you like to?'
+                message: 'It looks like you haven\'t created any posts, would you like to?'
             }
         ]);
-
-        console.log('DECISION: ' + makePost.create);
         return (makePost.create ? postItem() : console.log('No problem!'));
     } else {
         console.log('Here are all of your listed posts:');
