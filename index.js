@@ -3,10 +3,14 @@ const inquirer = require('inquirer');
 const util = require('util');
 const cTable = require('console.table');
 require('dotenv').config();
+const post = require('./JS/post');
 let queryPromise;
 let closePromise;
+let currentUser;
+let testing;
 
 //MySQL connection setup
+//=============================//
 const connection = mysql.createConnection({
     host: 'localhost',
     user: 'root',
@@ -16,6 +20,7 @@ const connection = mysql.createConnection({
 });
 
 //User input validation functions
+//=============================//
 function isNum(input) {
     if(isNaN(input)) {
         return('This value must be a valid number!');
@@ -39,6 +44,7 @@ function length(input) {
 
 
 //New users sign up for an account
+//===================================//
 async function signup() {
     let newUser = await inquirer.prompt([
         {
@@ -56,8 +62,8 @@ async function signup() {
     ]);
 
     //Determine whether or not the username already exists in the DB and take appropriate action
-    let user = await queryPromise('SELECT userid FROM users WHERE ?', {username: newUser.username});
-    if(user.length > 0) {
+    let userid = await queryPromise('SELECT userid FROM users WHERE ?', {username: newUser.username});
+    if(userid.length > 0) {
         console.log('That username is already in use, please enter another!');
         signup();
     } else {
@@ -67,12 +73,14 @@ async function signup() {
             password: newUser.password
         });
         console.log('Congratulations you have registered for an account!');
-        start();
+        login();
     }
 };
 
 //Users login if they have already registered for an account
+//============================================================//
 async function login() {
+    console.log('Please log in below:');
     let existingUser = await inquirer.prompt([
         {
             name: 'username',
@@ -93,11 +101,15 @@ async function login() {
         console.log('We could not locate an account with the given information, please try again!');
         init();
     } else {
-        start();
+        console.log('USERS ID IS: ' + JSON.stringify(user[0].userid));
+        // currentUser = user;
+        // testing = 'testing again';
+        start(user);
     }
 };
 
 //Initialize the login/signup process before proceeding
+//=======================================================//
 async function init() {
     let signupStatus = await inquirer.prompt([
         {
@@ -115,7 +127,8 @@ async function init() {
 };
 
 //User is logged in and can begin bidding/posting
-async function start() {
+//================================================//
+async function start(user) {
     let initial = await inquirer.prompt([
         {
             name: 'initChoice',
@@ -129,17 +142,23 @@ async function start() {
         }
     ]);
 
-    if(initial.initChoice === 'Manage and create your posts') {
-        post();
-    } else if(initial.initChoice === 'Bid on an item') {
-        bid();
-    } else if(initial.initChoice === 'EXIT') {
-        connection.end();
+    let choice = initial.initChoice;
+    switch(choice) {
+        case 'Manage and create your posts':
+            await post.managePosts(user);
+            start();
+            break;
+        case 'Bid on an item':
+            await bid();
+            break;
+        case 'EXIT':
+            connection.end();
     }
 };
 
 
 //Bid on items that currently exist in the database
+//===================================================//
 async function bid() {
     console.log('Here are the listed items and current bids:');
     let listed = await queryPromise('SELECT item, bid FROM auction_items');
@@ -175,7 +194,6 @@ async function bid() {
     }
 };
 
-
 init();
 
 //Promisify queries and establish database connection
@@ -188,3 +206,6 @@ connection.connect(err => {
 process.on('beforeExit', () => {
     closePromise();
 });
+
+module.exports.currentUser = currentUser;
+module.exports.testVal = testing;
