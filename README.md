@@ -10,7 +10,7 @@ This application was constructed as an environment where users can both post and
 * Console.table
 
 ## Future Development
-In order to allow users greater interactivity with their data, I would like to include functions that will allow them to remove posts from their history, view all active auctions in which they are the highest bidder, search the database for specific items, and allow administrator access to alter the database as needed. 
+In order to refine this application, I would like to set up the ability of certain users to acts as administrators for the database. Additionally, I would like to include better search functionality that would allow the user to more precisely look up information within the database.  
 
 ## Contributing
 Any and all contributions to this project are welcome. Please contact the creator at tjessee7624@gmail.com in order to do so. Thank you!    
