@@ -7,6 +7,7 @@ const validate = require('./JS/validate');
 const post = require('./JS/post');
 const bid = require('./JS/bid');
 const view = require('./JS/view');
+const search = require('./JS/search');
 let queryPromise;
 let closePromise;
 
@@ -122,6 +123,7 @@ async function start() {
                 'Manage, view, and create posts',
                 'Bid on an item',
                 'View bids you are winning',
+                'Search for an item',
                 'EXIT'
             ],
             message: 'Please select your desired action:'
@@ -140,6 +142,10 @@ async function start() {
             break;
         case 'View bids you are winning':
             await view.winning();
+            start();
+            break;
+        case 'Search for an item':
+            await search.locate();
             start();
             break;
         case 'EXIT':
