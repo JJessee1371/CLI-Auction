@@ -157,7 +157,6 @@ async function closeBidding() {
 
         await queryPromise('UPDATE auction_items SET closed = true WHERE ?', {id: toClose.id});
         let finalOffer = await queryPromise('SELECT bid, userid FROM auction_items WHERE ?', {id: toClose.id});
-        //[ RowDataPacket { bid: 75, userid: 4 } ]
         let finalBidder = await queryPromise('SELECT topBidder FROM auction_items WHERE ?', {id: toClose.id});
         console.log(`Congratulations! Your final offer of ${finalOffer[0].bid} came from user ${finalBidder}`);
     }
