@@ -2,7 +2,7 @@ const mysql = require('mysql');
 const inquirer = require('inquirer');
 const cTable = require('console.table');
 const util = require('util');
-const validate = require('./validate');
+const { checkValue } = require('./validate');
 require('dotenv').config();
 let queryPromise;
 let closePromise;
@@ -48,7 +48,7 @@ async function searchItem() {
             name: 'item',
             tyep: 'input',
             message: 'What item would you like to search for?',
-            validate: validate.checkValue
+            validate: checkValue
         }
     ]);
 
@@ -83,7 +83,7 @@ async function searchUsername() {
             name: 'username',
             type: 'input',
             message: 'Enter the username(whole or partial) to search for:',
-            validate: validate.checkValue
+            validate: checkValue
         }
     ]);
 

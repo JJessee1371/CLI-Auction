@@ -3,7 +3,7 @@ const inquirer = require('inquirer');
 const cTable = require('console.table');
 const util = require('util');
 const loggedIn = require('../index');
-const validate = require('./validate');
+const { checkNumber } = require('./validate');
 require('dotenv').config();
 let queryPromise;
 let closePromise;
@@ -42,7 +42,7 @@ module.exports = {
                 name: 'bid',
                 type: 'input',
                 message: 'How much would you like to bid for this item?',
-                validate: validate.checkNumber
+                validate: checkNumber
             }
         ]);
     

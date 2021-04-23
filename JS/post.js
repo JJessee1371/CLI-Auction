@@ -3,7 +3,7 @@ const inquirer = require('inquirer');
 const cTable = require('console.table');
 const util = require('util');
 const loggedIn = require('../index');
-const validate = require('./validate');
+const { checkValue, checkNumber } = require('./validate');
 require('dotenv').config();
 let queryPromise;
 let closePromise;
@@ -28,13 +28,13 @@ async function postItem() {
             name: 'item',
             type: 'input',
             message: 'What item would you like to put up for auction?',
-            validate: validate.checkValue
+            validate: checkValue
         },
         {
             name: 'value',
             type: 'input',
             message: 'What will be the minimum bidding amount for this item?',
-            validate: validate.checkNumber
+            validate: checkNumber
         },
         {
             name: 'category',
@@ -52,7 +52,7 @@ async function postItem() {
         bid: postedItem.value,
         userid: loggedIn.currentUser.id
     });
-    console.log(`${postedItem.item} successfully posted!`);
+    console.log(`${postedItem.item} successfully posted with an asking price of ${postedItem.value}!`);
 };
 
 
@@ -100,13 +100,13 @@ async function modifyPost() {
                 name: 'id',
                 type: 'input',
                 message: 'What is the items\' id?',
-                validate: validate.checkValue
+                validate: checkValue
             },
             {
                 name: 'item',
                 type: 'input',
                 message: 'Please reconfirm the item name to be listed.',
-                validate: validate.checkValue
+                validate: checkValue
             },
             {
                 name: 'category',
@@ -118,7 +118,7 @@ async function modifyPost() {
                 name: 'value',
                 type: 'input',
                 message: 'What is this items value? Note: This will restart all bidding.',
-                validate: validate.checkValue
+                validate: checkValue
             }
         ]);
 
@@ -151,14 +151,13 @@ async function closeBidding() {
                 name: 'id',
                 type: 'input',
                 message: 'Enter the item ID to close bidding.',
-                validate: validate.checkValue
+                validate: checkValue
             }
         ]);
 
         await queryPromise('UPDATE auction_items SET closed = true WHERE ?', {id: toClose.id});
-        let finalOffer = await queryPromise('SELECT bid, userid FROM auction_items WHERE ?', {id: toClose.id});
-        let finalBidder = await queryPromise('SELECT topBidder FROM auction_items WHERE ?', {id: toClose.id});
-        console.log(`Congratulations! Your final offer of ${finalOffer[0].bid} came from user ${finalBidder}`);
+        let finalOffer = await queryPromise('SELECT bid, topbidder FROM auction_items WHERE ?', {id: toClose.id});
+        console.log(`Congratulations! Your final offer of ${finalOffer[0].bid} came from user ${finalOffer[0].topBidder}`);
     }
 };
 

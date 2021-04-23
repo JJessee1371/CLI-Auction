@@ -2,7 +2,7 @@ const mysql = require('mysql');
 const inquirer = require('inquirer');
 const util = require('util');
 require('dotenv').config();
-const validate = require('./JS/validate');
+const { checkLength, checkValue } = require('./JS/validate');
 const post = require('./JS/post');
 const bid = require('./JS/bid');
 const view = require('./JS/view');
@@ -29,13 +29,13 @@ async function signup() {
             name: 'username',
             type: 'input',
             message: 'Please enter a username for your account:',
-            validate: validate.checkLength
+            validate: checkLength
         },
         {
             name: 'password',
             type: 'input',
             message: 'Please enter a password for your account:',
-            validate: validate.checkLength
+            validate: checkLength
         }
     ]);
 
@@ -50,7 +50,7 @@ async function signup() {
             username: newUser.username,
             password: newUser.password
         });
-        console.log('Congratulations you have registered for an account!');
+        console.log('Congratulations you have successfully registered for an account!');
         login();
     }
 };
@@ -65,18 +65,18 @@ async function login() {
             name: 'username',
             type: 'input',
             message: 'Please enter your username:',
-            validate: validate.checkValue
+            validate: checkValue
         },
         {
             name: 'password',
             type: 'input',
             message: 'Please enter your password:',
-            validate: validate.checkValue
+            validate: checkValue
         }
     ]);
 
     //Determine if account with given information exists and prcoeed to necessary action
-    let user = await queryPromise('SELECT userid FROM users WHERE username = ? AND password = ?', 
+    let user = await queryPromise('SELECT userid FROM users WHERE username = ? AND password = ?',
     [existingUser.username, existingUser.password]);
     if(user.length === 0) {
         console.log('We could not locate an account with the given information, please try again!');
