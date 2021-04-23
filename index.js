@@ -150,7 +150,7 @@ async function start() {
         case 'EXIT':
             connection.end();
             break;
-    }
+    };
 };
 
 init();

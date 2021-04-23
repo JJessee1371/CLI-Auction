@@ -20,6 +20,26 @@ const connection = mysql.createConnection({
 });
 
 
+//Result handler function
+//==========================//
+async function processResult(results, searchFunc) {
+    if(results.length === 0) {
+        let tryAgain = await inquirer.prompt([
+            {
+                name: 'attempt',
+                type: 'confirm',
+                message: 'Sorry, no results were found for this search, try again?'
+            }
+        ]);
+
+        (tryAgain.attempt ? await searchFunc() : console.log('No problem!'));
+    } else {
+        console.log('Here are the results of your search:');
+        console.table(results);
+    }
+};
+
+
 //Search by item name
 //=====================//
 async function searchItem() {
@@ -34,20 +54,7 @@ async function searchItem() {
 
     let results = await queryPromise(`SELECT id AS Item_Id, item AS Item, category AS Category, bid AS Bid, topBidder AS Top_Bidder
     FROM auction_items WHERE item RLIKE '${toSearch.item}' AND ?`, {closed: false});
-    if(results.length === 0) {
-        let tryAgain = await inquirer.prompt([
-            {
-                name: 'attempt',
-                type: 'confirm',
-                message: 'Sorry, no results were found for your search, try again?'
-            }
-        ]);
-
-        (tryAgain.attempt ? await searchItem() : console.log('No problem!'));
-    } else {
-        console.log('Here are the results of your search:');
-        console.table(results);
-    }
+    await processResult(results, searchItem);
 };
 
 
@@ -65,20 +72,7 @@ async function searchCategory() {
 
     let results = await queryPromise(`SELECT id AS Item_Id, item AS Item, category AS Category, bid AS Bid, topBidder AS Top_Bidder
     FROM auction_items WHERE category = ? AND closed = ?`, [toSearch.category, false]);
-    if(results.length === 0) {
-        let tryAgain = await inquirer.prompt([
-            {
-                name: 'attempt',
-                type: 'confirm',
-                message: 'Sorry, no results were found under this category, try under a new category?'
-            }
-        ]);
-
-        (tryAgain.attempt ? await searchCategory() : console.log('No problem!'));
-    } else {
-        console.log('Here are the items listed under this category:');
-        console.table(results);
-    }
+    await processResult(results, searchCategory);
 };
 
 //Search by username
@@ -97,20 +91,7 @@ async function searchUsername() {
     FROM auction_items AS tbl1
     JOIN users AS tbl2 ON tbl1.userid = tbl2.userid
     WHERE tbl2.username RLIKE '${toSearch.username}' AND closed = false`);
-    if(results.length === 0) {
-        let tryAgain = await inquirer.prompt([
-            {
-                name: 'attempt',
-                type: 'confirm',
-                message: 'Sorry, no results were found with this search, try again?'
-            }
-        ]);
-
-        (tryAgain.attempt ? await searchUsername() : console.log('No problem!'));
-    } else {
-        console.log('Here are the results of your search:');
-        console.table(results);
-    }
+    await processResult(results, searchUsername);
 };
 
 
@@ -136,7 +117,7 @@ module.exports = {
             case 'By username':
                 await searchUsername();
                 break;
-        }
+        };
     }
 };
 

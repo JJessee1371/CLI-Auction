@@ -192,7 +192,7 @@ module.exports = {
             case 'Close bidding on a post':
                 await closeBidding();
                 break;
-        }
+        };
     }
 };
 
