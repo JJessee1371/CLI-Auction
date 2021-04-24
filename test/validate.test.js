@@ -1,4 +1,4 @@
-const { checkLength, checkNumber, checkValue } = require('../JS/validate');
+const { checkLength, checkNumber, checkValue, checkPassword } = require('../JS/validate');
 
 describe('validate', () => {
     describe('checkLength', () => {
@@ -18,6 +18,26 @@ describe('validate', () => {
             const user = '';
 
             expect(checkLength(user)).toBe('This field must be between 1 and 20 characters');
+        });
+    });
+
+    describe('checkPassword', () => {
+        it('Should return an error message if the string is less than 8 characters long', () => {
+            const password = 'abc';
+
+            expect(checkPassword(password)).toBe('Password must be between 8 and 20 characters long');
+        });
+
+        it('Should return an error message if the string is more than 20 characters long', () => {
+            const password = 'iamareallylongstringandshouldnotpass';
+
+            expect(checkPassword(password)).toBe('Password must be between 8 and 20 characters long');
+        });
+
+        it('Should return true if the entere value is between 8 and 20 characters long', () => {
+            const password = '123abc456qwe';
+
+            expect(checkPassword(password)).toBe(true);
         });
     });
 

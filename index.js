@@ -72,8 +72,8 @@ async function setAdmin(id, password) {
     }
 };
 
-//New users sign up for an account
-//===================================//
+//New users sign up for an account and admin access if applicable
+//=================================================================//
 async function signup() {
     let newUser = await inquirer.prompt([
         {
