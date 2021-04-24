@@ -2,7 +2,7 @@ const mysql = require('mysql');
 const inquirer = require('inquirer');
 const util = require('util');
 require('dotenv').config();
-const { checkLength, checkValue } = require('./JS/validate');
+const { checkLength, checkValue, checkPassword } = require('./JS/validate');
 const post = require('./JS/post');
 const bid = require('./JS/bid');
 const view = require('./JS/view');
@@ -21,6 +21,57 @@ const connection = mysql.createConnection({
 });
 
 
+//Initialize the admin access password 
+//======================================//
+async function initAdmin(id) {
+    let setAdmin = await inquirer.prompt([
+        {
+            name: 'setpass',
+            type: 'input',
+            message: 'Please set a password for administrator access between 8 and 20 characters', 
+            validate: checkPassword
+        }
+    ]);
+    await queryPromise('INSERT INTO admin_users SET ?',
+    {
+        admin_password: setAdmin.setpass,
+        userid: id
+    });
+    console.log('Admin password successfully set.');
+};
+
+
+//Add an admin user to the table
+//================================//
+async function setAdmin(id, password) {
+    let verify = await inquirer.prompt([
+        {
+            name: 'existingPass',
+            type: 'input',
+            message: 'Please enter the password to register as an admin user:'
+        }
+    ]);
+
+    if(verify.existingPass === password) {
+        await queryPromise('INSERT INTO admin_users SET ?',
+        {
+            admin_password: password,
+            userid: id
+        });
+        console.log('You have successfully registered as an admin user.');
+    } else {
+        let tryAgain = await inquirer.prompt([
+            {
+                name: 'confirm',
+                type: 'confirm',
+                message: 'The password does not match our records, try again? If not, you will be logged in as a user.'
+            }
+        ]);
+
+        (tryAgain.confirm ? await setAdmin(id, password) : await login());
+    }
+};
+
 //New users sign up for an account
 //===================================//
 async function signup() {
@@ -36,6 +87,11 @@ async function signup() {
             type: 'input',
             message: 'Please enter a password for your account:',
             validate: checkLength
+        },
+        {
+            name: 'admin',
+            type: 'confirm',
+            message: 'Are you an administrator for this application?'
         }
     ]);
 
@@ -43,7 +99,7 @@ async function signup() {
     let userid = await queryPromise('SELECT userid FROM users WHERE ?', {username: newUser.username});
     if(userid.length > 0) {
         console.log('That username is already in use, please enter another!');
-        signup();
+        await signup();
     } else {
         await queryPromise('INSERT INTO users SET ?',
         {
@@ -51,7 +107,19 @@ async function signup() {
             password: newUser.password
         });
         console.log('Congratulations you have successfully registered for an account!');
-        login();
+        
+        //Actions taken if new user is an admin
+        if(newUser.admin) {
+            let verifyAdPass = await queryPromise('SELECT admin_password FROM admin_users');
+            let newId = await queryPromise('SELECT userid FROM users WHERE username = ? AND password = ?',
+            [newUser.username, newUser.password]);
+
+            //If admin password has not been set, the first user initializes it. Otherwise, the new user registers for admin access
+            (verifyAdPass.length === 0 ? await initAdmin(newId[0].userid) : await setAdmin(newId[0].userid, verifyAdPass[0].admin_password));
+            await login();
+        } else {
+            await login();
+        }
     }
 };
 

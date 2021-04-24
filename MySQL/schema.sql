@@ -10,6 +10,14 @@ CREATE TABLE users (
     PRIMARY KEY (userid)
 );
 
+CREATE TABLE admin_users (
+    adminid INT NOT NULL AUTO_INCREMENT,
+    admin_password VARCHAR(15),
+    userid INT,
+        FOREIGN KEY (userid) REFERENCES users (userid),
+    PRIMARY KEY (adminid)
+);
+
 CREATE TABLE auction_items (
 	id INT NOT NULL AUTO_INCREMENT,
     item VARCHAR(100) NOT NULL,
