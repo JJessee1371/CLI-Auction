@@ -23,37 +23,44 @@ const connection = mysql.createConnection({
 //===============================================//
 module.exports = {
     makeBid:
-    async function create() {
-        console.log('Here are all active auctions:');
-        let listed = await queryPromise(`SELECT id AS Item_Id, item AS Item, bid AS Current_Bid, category AS Category, topBidder AS Top_Bidder
-        FROM auction_items WHERE ?`, {closed: false});
-        console.table(listed);
-    
-        let itemChoice = await inquirer.prompt([
-            {
-                name: 'item',
-                type: 'list',
-                choices: listed.map(obj => {
-                    return obj.Item_Id;
-                }),
-                message: 'Please select the ID of the item you would like to bid on:'
-            },
-            {
-                name: 'bid',
-                type: 'input',
-                message: 'How much would you like to bid for this item?',
-                validate: checkNumber
+    async function() {
+        try {
+            let listed = await queryPromise(`SELECT id AS Item_Id, item AS Item, bid AS Current_Bid, category AS Category, topBidder AS Top_Bidder
+            FROM auction_items WHERE ?`, {closed: false});
+            if(listed.length === 0) {
+                console.log('Sorry, it appears there are no items up for bidding at this time.');
             }
-        ]);
-    
-        let selected = await queryPromise('SELECT bid FROM auction_items WHERE ?', {id: itemChoice.item});
-        if(selected[0].bid < parseInt(itemChoice.bid)) {
-            await queryPromise('UPDATE auction_items SET bid = ?, topBidder = ? WHERE id = ?', [itemChoice.bid, loggedIn.currentUser.name, itemChoice.item]);
-            console.log(`Bid for ${itemChoice.bid} successfully posted!`);
-        } else {
-            console.log(`Your bid must be higher than ${selected[0].bid} please try again`);
-            create();
-        }
+            console.log('Here are all active auctions:');
+            console.table(listed);
+
+            let itemChoice = await inquirer.prompt([
+                {
+                    name: 'item',
+                    type: 'list',
+                    choices: listed.map(obj => {
+                        return obj.Item_Id;
+                    }),
+                    message: 'Please select the ID of the item you would like to bid on:'
+                },
+                {
+                    name: 'bid',
+                    type: 'input',
+                    message: 'How much would you like to bid for this item?',
+                    validate: checkNumber
+                }
+            ]);
+        
+            let selected = await queryPromise('SELECT bid FROM auction_items WHERE ?', {id: itemChoice.item});
+            if(selected[0].bid < parseInt(itemChoice.bid)) {
+                await queryPromise('UPDATE auction_items SET bid = ?, topBidder = ? WHERE id = ?', [itemChoice.bid, loggedIn.currentUser.name, itemChoice.item]);
+                console.log(`Bid for ${itemChoice.bid} successfully posted!`);
+            } else {
+                console.log(`Your bid must be higher than ${selected[0].bid} please try again`);
+                create();
+            }
+        } catch(err) {
+            console.log(err);
+        };
     }
 };
 
