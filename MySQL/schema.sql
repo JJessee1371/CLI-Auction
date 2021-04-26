@@ -7,6 +7,7 @@ CREATE TABLE users (
     userid INT NOT NULL AUTO_INCREMENT,
     username VARCHAR(20) NOT NULL,
     password VARCHAR(20) NOT NULL,
+    admin_access BOOLEAN DEFAULT false,
     PRIMARY KEY (userid)
 );
 

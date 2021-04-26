@@ -32,11 +32,13 @@ async function initAdmin(id) {
             validate: checkPassword
         }
     ]);
+
     await queryPromise('INSERT INTO admin_users SET ?',
     {
         admin_password: setAdmin.setpass,
         userid: id
     });
+    await queryPromise('UPDATE users SET admin_access = ? WHERE userid = ?', [true, id]);
     console.log('Admin password successfully set.');
 };
 
@@ -58,13 +60,14 @@ async function setAdmin(id, password) {
             admin_password: password,
             userid: id
         });
+        await queryPromise('UPDATE users SET admin_access = ? WHERE userid = ?', [true, id]);
         console.log('You have successfully registered as an admin user.');
     } else {
         let tryAgain = await inquirer.prompt([
             {
                 name: 'confirm',
                 type: 'confirm',
-                message: 'The password does not match our records, try again? If not, you will be logged in as a user.'
+                message: 'The password does not match our records, try again? If not, you will log in as a user.'
             }
         ]);
 
@@ -91,7 +94,7 @@ async function signup() {
         {
             name: 'admin',
             type: 'confirm',
-            message: 'Are you an administrator for this application?'
+            message: 'Are you an admin for this application?'
         }
     ]);
 
@@ -102,13 +105,13 @@ async function signup() {
         await signup();
     } else {
         await queryPromise('INSERT INTO users SET ?',
-        {
-            username: newUser.username,
-            password: newUser.password
-        });
-        console.log('Congratulations you have successfully registered for an account!');
-        
-        //Actions taken if new user is an admin
+            {
+                username: newUser.username,
+                password: newUser.password
+            });
+            console.log('Congratulations you have successfully registered for an account!');
+
+        //User follows either admin or regular sign up path
         if(newUser.admin) {
             let verifyAdPass = await queryPromise('SELECT admin_password FROM admin_users');
             let newId = await queryPromise('SELECT userid FROM users WHERE username = ? AND password = ?',
