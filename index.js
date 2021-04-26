@@ -262,21 +262,21 @@ async function regUserStart() {
     ]);
 
     switch(initial.initChoice) {
-        case 'Manage and create your posts':
+        case 'Manage, view, and create posts':
             await managePosts();
-            regUserstart();
+            regUserStart();
             break;
         case 'Bid on an item':
             await makeBid();
-            regUserstart();
+            regUserStart();
             break;
         case 'View bids you are winning':
             await winning();
-            regUserstart();
+            regUserStart();
             break;
         case 'Search for an item':
             await locate();
-            regUserstart();
+            regUserStart();
             break;
         case 'EXIT':
             connection.end();
@@ -309,7 +309,7 @@ async function adminStart() {
             await manageUsers();
             adminStart();
             break;
-        case 'Manage and create your posts':
+        case 'Manage, view, and create posts':
             await managePosts();
             adminStart();
             break;
@@ -334,7 +334,7 @@ async function adminStart() {
 //User is logged in and can begin bidding/posting
 //================================================//
 async function start() {
-    // console.log('ADMIN ACCESS = ' + adminAccess);
+    console.log('ADMIN ACCESS = ' + adminAccess);
     (adminAccess ? await adminStart() : await regUserStart());
 };
 

@@ -176,8 +176,7 @@ module.exports = {
             }
         ]);
 
-        let action = userChoice.choice;
-        switch(action) {
+        switch(userChoice.choice) {
             case 'Post an item':
                 await postItem();
                 break;
