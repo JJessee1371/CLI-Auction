@@ -23,7 +23,7 @@ const connection = mysql.createConnection({
 //===============================================//
 module.exports = {
     makeBid:
-    async function() {
+    async function create() {
         try {
             let listed = await queryPromise(`SELECT id AS Item_Id, item AS Item, bid AS Current_Bid, category AS Category, topBidder AS Top_Bidder
             FROM auction_items WHERE ?`, {closed: false});
@@ -38,9 +38,9 @@ module.exports = {
                     name: 'item',
                     type: 'list',
                     choices: listed.map(obj => {
-                        return obj.Item_Id;
+                        return `${obj.Item_Id} - ${obj.Item}`;
                     }),
-                    message: 'Please select the ID of the item you would like to bid on:'
+                    message: 'Please select the item you would like to bid on:'
                 },
                 {
                     name: 'bid',

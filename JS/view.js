@@ -22,22 +22,26 @@ const connection = mysql.createConnection({
 module.exports = {
     winning:
     async function() {
-        let winningBids = await queryPromise('SELECT id AS Item_Id, item AS Item, category AS Category, bid AS Bid FROM auction_items WHERE topBidder = ? and closed = ?',
-        [loggedIn.currentUser.name, false]);
-        if(winningBids.length === 0) {
-            let makeBid = await inquirer.prompt([
-                {
-                    name: 'bid',
-                    type: 'confirm',
-                    message: 'It appears you have no winning bids. Would you like to bid again?'
-                }
-            ]);
+        try {
+            let winningBids = await queryPromise('SELECT id AS Item_Id, item AS Item, category AS Category, bid AS Bid FROM auction_items WHERE topBidder = ? and closed = ?',
+            [loggedIn.currentUser.name, false]);
+            if(winningBids.length === 0) {
+                let makeBid = await inquirer.prompt([
+                    {
+                        name: 'bid',
+                        type: 'confirm',
+                        message: 'It appears you have no winning bids. Would you like to bid again?'
+                    }
+                ]);
 
-            return (makeBid.bid ? bid.makeBid() : console.log('No problem!'));
-        } else {
-            console.log('Here are your current winning bids:');
-            console.table(winningBids);
-        }
+                return (makeBid.bid ? bid.makeBid() : console.log('No problem!'));
+            } else {
+                console.log('Here are your current winning bids:');
+                console.table(winningBids);
+            }
+        } catch(err) {
+            console.log(err);
+        };
     }
 };
 

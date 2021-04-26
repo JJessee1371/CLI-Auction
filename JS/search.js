@@ -23,100 +23,120 @@ const connection = mysql.createConnection({
 //Result handler function
 //==========================//
 async function processResult(results, searchFunc) {
-    if(results.length === 0) {
-        let tryAgain = await inquirer.prompt([
-            {
-                name: 'attempt',
-                type: 'confirm',
-                message: 'Sorry, no results were found for this search, try again?'
-            }
-        ]);
-
-        (tryAgain.attempt ? await searchFunc() : console.log('No problem!'));
-    } else {
-        console.log('Here are the results of your search:');
-        console.table(results);
-    }
+    try {
+        if(results.length === 0) {
+            let tryAgain = await inquirer.prompt([
+                {
+                    name: 'attempt',
+                    type: 'confirm',
+                    message: 'Sorry, no results were found for this search, try again?'
+                }
+            ]);
+    
+            (tryAgain.attempt ? await searchFunc() : console.log('No problem!'));
+        } else {
+            console.log('Here are the results of your search:');
+            console.table(results);
+        }
+    } catch(err) {
+        console.log(err);
+    };
 };
 
 
 //Search by item name
 //=====================//
 async function searchItem() {
-    let toSearch = await inquirer.prompt([
-        {
-            name: 'item',
-            tyep: 'input',
-            message: 'What item would you like to search for?',
-            validate: checkValue
-        }
-    ]);
-
-    let results = await queryPromise(`SELECT id AS Item_Id, item AS Item, category AS Category, bid AS Bid, topBidder AS Top_Bidder
-    FROM auction_items WHERE item RLIKE '${toSearch.item}' AND ?`, {closed: false});
-    await processResult(results, searchItem);
+    try {
+        let toSearch = await inquirer.prompt([
+            {
+                name: 'item',
+                tyep: 'input',
+                message: 'What item would you like to search for?',
+                validate: checkValue
+            }
+        ]);
+    
+        let results = await queryPromise(`SELECT id AS Item_Id, item AS Item, category AS Category, bid AS Bid, topBidder AS Top_Bidder
+        FROM auction_items WHERE item RLIKE '${toSearch.item}' AND ?`, {closed: false});
+        await processResult(results, searchItem);
+    } catch(err) {
+        console.log(err);
+    };
 };
 
 
 //Search by category
 //=====================//
 async function searchCategory() {
-    let toSearch = await inquirer.prompt([
-        {
-            name: 'category',
-            type: 'list',
-            choices: categories,
-            message: 'Select the the category you would like to search:'
-        }
-    ]);
-
-    let results = await queryPromise(`SELECT id AS Item_Id, item AS Item, category AS Category, bid AS Bid, topBidder AS Top_Bidder
-    FROM auction_items WHERE category = ? AND closed = ?`, [toSearch.category, false]);
-    await processResult(results, searchCategory);
+    try {
+        let toSearch = await inquirer.prompt([
+            {
+                name: 'category',
+                type: 'list',
+                choices: categories,
+                message: 'Select the the category you would like to search:'
+            }
+        ]);
+    
+        let results = await queryPromise(`SELECT id AS Item_Id, item AS Item, category AS Category, bid AS Bid, topBidder AS Top_Bidder
+        FROM auction_items WHERE category = ? AND closed = ?`, [toSearch.category, false]);
+        await processResult(results, searchCategory);
+    } catch(err) {
+        console.log(err);
+    };
 };
 
 //Search by username
 //====================//
 async function searchUsername() {
-    let toSearch = await inquirer.prompt([
-        {
-            name: 'username',
-            type: 'input',
-            message: 'Enter the username(whole or partial) to search for:',
-            validate: checkValue
-        }
-    ]);
-
-    let results = await queryPromise(`SELECT id AS Item_Id, item AS Item, category AS Category, bid AS Bid, topBidder AS Top_Bidder, username AS Username
-    FROM auction_items AS tbl1
-    JOIN users AS tbl2 ON tbl1.userid = tbl2.userid
-    WHERE tbl2.username RLIKE '${toSearch.username}' AND closed = false`);
-    await processResult(results, searchUsername);
+    try {
+        let toSearch = await inquirer.prompt([
+            {
+                name: 'username',
+                type: 'input',
+                message: 'Enter the username(whole or partial) to search for:',
+                validate: checkValue
+            }
+        ]);
+    
+        let results = await queryPromise(`SELECT id AS Item_Id, item AS Item, category AS Category, bid AS Bid, topBidder AS Top_Bidder, username AS Username
+        FROM auction_items AS tbl1
+        JOIN users AS tbl2 ON tbl1.userid = tbl2.userid
+        WHERE tbl2.username RLIKE '${toSearch.username}' AND closed = false`);
+        await processResult(results, searchUsername);
+    } catch(err) {
+        console.log(err);
+    };
 };
 
 
 module.exports = {
     locate:
     async function() {
-        let action = await inquirer.prompt([
-            {
-                name: 'initDecision',
-                type: 'list',
-                choices: searchOptions,
-                message: 'Choose how you would like to search:'
-            }
-        ]);
-
-        switch(action.initDecision) {
-            case 'By item name':
-                await searchItem();
-                break;
-            case 'By category':
-                await searchCategory();
-                break;
-            case 'By username':
-                await searchUsername();
-                break;
+        try {
+            let action = await inquirer.prompt([
+                {
+                    name: 'initDecision',
+                    type: 'list',
+                    choices: searchOptions,
+                    message: 'Choose how you would like to search:'
+                }
+            ]);
+    
+            switch(action.initDecision) {
+                case 'By item name':
+                    await searchItem();
+                    break;
+                case 'By category':
+                    await searchCategory();
+                    break;
+                case 'By username':
+                    await searchUsername();
+                    break;
+            };
+        } catch(err) {
+            console.log(err);
         };
     }
 };
