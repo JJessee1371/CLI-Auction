@@ -7,6 +7,7 @@ const { managePosts } = require('./JS/post');
 const { makeBid } = require('./JS/bid');
 const { winning } = require('./JS/view');
 const { locate } = require('./JS/search');
+const { manageUsers } = require('./JS/admin');
 let queryPromise;
 let closePromise;
 let adminAccess;
@@ -196,29 +197,29 @@ async function login() {
             };
             await start();
         }
-    } else {
-        if(existingUser.admin) {
-            if(currentPass === existingUser.admin) {
-                module.exports.currentUser = {
-                    id: user[0].userid,
-                    name: existingUser.username,
-                    admin: true
-                };
-                adminAccess = true;
-                await start();
-            }
-            console.log('The password does not match our records');
-            await login();
-        } else {
-            console.log('Successfully logged in!');
-            adminAccess = false;
+    } else if(existingUser.admin) {
+        if(currentPass === existingUser.admin) {
             module.exports.currentUser = {
                 id: user[0].userid,
                 name: existingUser.username,
-                admin: false
+                admin: true
             };
+            adminAccess = true;
+            console.log('Successfully logged in as an admin.');
             await start();
-        }
+        } else {
+            console.log('The password does not match our records');
+            await login();
+        } 
+    } else {
+        console.log('Successfully logged in!');
+        adminAccess = false;
+        module.exports.currentUser = {
+            id: user[0].userid,
+            name: existingUser.username,
+            admin: false
+        };
+        await start();
     }
 };
 
@@ -242,10 +243,9 @@ async function init() {
 };
 
 
-//User is logged in and can begin bidding/posting
-//================================================//
-async function start() {
-    console.log('ADMIN ACCESS = ' + adminAccess);
+//Action choices available to standard users
+//===========================================//
+async function regUserStart() {
     let initial = await inquirer.prompt([
         {
             name: 'initChoice',
@@ -264,24 +264,78 @@ async function start() {
     switch(initial.initChoice) {
         case 'Manage and create your posts':
             await managePosts();
-            start();
+            regUserstart();
             break;
         case 'Bid on an item':
             await makeBid();
-            start();
+            regUserstart();
             break;
         case 'View bids you are winning':
             await winning();
-            start();
+            regUserstart();
             break;
         case 'Search for an item':
             await locate();
-            start();
+            regUserstart();
             break;
         case 'EXIT':
             connection.end();
             break;
     };
+};
+
+
+//Actions available to admin users
+//==================================//
+async function adminStart() {
+    let initial = await inquirer.prompt([
+        {
+            name: 'initChoice',
+            type: 'list',
+            choices: [
+                'Manage users and admin access',
+                'Manage, view, and create posts',
+                'Bid on an item',
+                'View bids you are winning',
+                'Search for an item',
+                'EXIT'
+            ],
+            message: 'Please select your desired action:'
+        }
+    ]);
+
+    switch(initial.initChoice) {
+        case 'Manage users and admin access':
+            await manageUsers();
+            adminStart();
+            break;
+        case 'Manage and create your posts':
+            await managePosts();
+            adminStart();
+            break;
+        case 'Bid on an item':
+            await makeBid();
+            adminStart();
+            break;
+        case 'View bids you are winning':
+            await winning();
+            adminStart();
+            break;
+        case 'Search for an item':
+            await locate();
+            adminStart();
+            break;
+        case 'EXIT':
+            connection.end();
+            break;
+    };
+}
+
+//User is logged in and can begin bidding/posting
+//================================================//
+async function start() {
+    // console.log('ADMIN ACCESS = ' + adminAccess);
+    (adminAccess ? await adminStart() : await regUserStart());
 };
 
 init();
