@@ -119,9 +119,9 @@ async function signup() {
 
             //If admin password has not been set, the first user initializes it. Otherwise, the new user registers for admin access
             (verifyAdPass.length === 0 ? await initAdmin(newId[0].userid) : await setAdmin(newId[0].userid, verifyAdPass[0].admin_password));
-            await login();
+            await start();
         } else {
-            await login();
+            await start();
         }
     }
 };
@@ -143,22 +143,77 @@ async function login() {
             type: 'input',
             message: 'Please enter your password:',
             validate: checkValue
+        },
+        {
+            name: 'admin',
+            type: 'input',
+            message: 'Enter the password if logging in as an admin:'
+        },
+        {
+            name: 'register',
+            type: 'confirm',
+            message: 'Are you registering as a new admin?'
         }
     ]);
 
-    //Determine if account with given information exists and prcoeed to necessary action
+    //Determine if a user exists in the database and gather their ID
     let user = await queryPromise('SELECT userid FROM users WHERE username = ? AND password = ?',
     [existingUser.username, existingUser.password]);
     if(user.length === 0) {
         console.log('We could not locate an account with the given information, please try again!');
-        init();
+        await init();
+    }
+
+    let current = await queryPromise('SELECT admin_password FROM admin_users');
+
+    //Based on input user either logs in or registers as an admin
+    if(existingUser.register) {
+        let verifyPass = await inquirer.prompt([
+            {
+                name: 'pass',
+                type: 'input',
+                message: 'Enter the password to register as an admin:'
+            }
+        ]);
+        
+        if(current[0].admin_password === verifyPass.pass) {
+            await queryPromise('UPDATE users SET admin_access = ? WHERE userid = ?',
+            [true, user[0].userid]);
+            await queryPromise('INSERT INTO admin_users SET ?',
+            {
+                admin_password: current[0].admin_password,
+                userid: user[0].userid
+            });
+            console.log('You have been granted admin access.');
+
+            module.exports.currentUser = {
+                id: user[0].userid,
+                name: existingUser.username,
+                admin: true
+            };
+            await start();
+        }
     } else {
-        //Export user ID/username to attach to their future actions
-        module.exports.currentUser = {
-            id: user[0].userid,
-            name: existingUser.username
-        };
-        start();
+        if(existingUser.admin) {
+            if(current[0].admin_password === existingUser.admin) {
+                module.exports.currentUser = {
+                    id: user[0].userid,
+                    name: existingUser.username,
+                    admin: true
+                };
+                await start();
+            }
+            console.log('The password does not match our records');
+            await login();
+        } else {
+            console.log('Successfully logged in!');
+            module.exports.currentUser = {
+                id: user[0].userid,
+                name: existingUser.username,
+                admin: false
+            };
+            await start();
+        }
     }
 };
 
