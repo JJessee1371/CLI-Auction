@@ -3,12 +3,13 @@ const inquirer = require('inquirer');
 const util = require('util');
 require('dotenv').config();
 const { checkLength, checkValue, checkPassword } = require('./JS/validate');
-const post = require('./JS/post');
-const bid = require('./JS/bid');
-const view = require('./JS/view');
-const search = require('./JS/search');
+const { managePosts } = require('./JS/post');
+const { makeBid } = require('./JS/bid');
+const { winning } = require('./JS/view');
+const { locate } = require('./JS/search');
 let queryPromise;
 let closePromise;
+let adminAccess;
 
 //MySQL connection setup
 //=============================//
@@ -39,6 +40,7 @@ async function initAdmin(id) {
         userid: id
     });
     await queryPromise('UPDATE users SET admin_access = ? WHERE userid = ?', [true, id]);
+    adminAccess = true;
     console.log('Admin password successfully set.');
 };
 
@@ -61,6 +63,7 @@ async function setAdmin(id, password) {
             userid: id
         });
         await queryPromise('UPDATE users SET admin_access = ? WHERE userid = ?', [true, id]);
+        adminAccess = true;
         console.log('You have successfully registered as an admin user.');
     } else {
         let tryAgain = await inquirer.prompt([
@@ -109,13 +112,13 @@ async function signup() {
                 username: newUser.username,
                 password: newUser.password
             });
+            adminAccess = false;
             console.log('Congratulations you have successfully registered for an account!');
 
-        //User follows either admin or regular sign up path
+        //User follows either admin or regular signup path
         if(newUser.admin) {
             let verifyAdPass = await queryPromise('SELECT admin_password FROM admin_users');
-            let newId = await queryPromise('SELECT userid FROM users WHERE username = ? AND password = ?',
-            [newUser.username, newUser.password]);
+            let newId = await queryPromise('SELECT userid FROM users WHERE username = ? AND password = ?', [newUser.username, newUser.password]);
 
             //If admin password has not been set, the first user initializes it. Otherwise, the new user registers for admin access
             (verifyAdPass.length === 0 ? await initAdmin(newId[0].userid) : await setAdmin(newId[0].userid, verifyAdPass[0].admin_password));
@@ -147,7 +150,7 @@ async function login() {
         {
             name: 'admin',
             type: 'input',
-            message: 'Enter the password if logging in as an admin:'
+            message: 'Enter the password if logging in as an admin or press enter:'
         },
         {
             name: 'register',
@@ -157,16 +160,16 @@ async function login() {
     ]);
 
     //Determine if a user exists in the database and gather their ID
-    let user = await queryPromise('SELECT userid FROM users WHERE username = ? AND password = ?',
-    [existingUser.username, existingUser.password]);
+    let user = await queryPromise('SELECT userid FROM users WHERE username = ? AND password = ?', [existingUser.username, existingUser.password]);
     if(user.length === 0) {
         console.log('We could not locate an account with the given information, please try again!');
         await init();
     }
 
-    let current = await queryPromise('SELECT admin_password FROM admin_users');
+    let password = await queryPromise('SELECT admin_password FROM admin_users');
+    let currentPass = password[0].admin_password;
 
-    //Based on input user either logs in or registers as an admin
+    //Based on input user either logs in or registers as an admin, the user data is then exported for external use
     if(existingUser.register) {
         let verifyPass = await inquirer.prompt([
             {
@@ -176,14 +179,14 @@ async function login() {
             }
         ]);
         
-        if(current[0].admin_password === verifyPass.pass) {
-            await queryPromise('UPDATE users SET admin_access = ? WHERE userid = ?',
-            [true, user[0].userid]);
+        if(currentPass === verifyPass.pass) {
+            await queryPromise('UPDATE users SET admin_access = ? WHERE userid = ?', [true, user[0].userid]);
             await queryPromise('INSERT INTO admin_users SET ?',
             {
-                admin_password: current[0].admin_password,
+                admin_password: currentPass,
                 userid: user[0].userid
             });
+            adminAccess = true;
             console.log('You have been granted admin access.');
 
             module.exports.currentUser = {
@@ -195,18 +198,20 @@ async function login() {
         }
     } else {
         if(existingUser.admin) {
-            if(current[0].admin_password === existingUser.admin) {
+            if(currentPass === existingUser.admin) {
                 module.exports.currentUser = {
                     id: user[0].userid,
                     name: existingUser.username,
                     admin: true
                 };
+                adminAccess = true;
                 await start();
             }
             console.log('The password does not match our records');
             await login();
         } else {
             console.log('Successfully logged in!');
+            adminAccess = false;
             module.exports.currentUser = {
                 id: user[0].userid,
                 name: existingUser.username,
@@ -218,8 +223,8 @@ async function login() {
 };
 
 
-//Initialize the login/signup process before proceeding
-//=======================================================//
+//Initialize the login/signup process 
+//=======================================//
 async function init() {
     let signupStatus = await inquirer.prompt([
         {
@@ -240,6 +245,7 @@ async function init() {
 //User is logged in and can begin bidding/posting
 //================================================//
 async function start() {
+    console.log('ADMIN ACCESS = ' + adminAccess);
     let initial = await inquirer.prompt([
         {
             name: 'initChoice',
@@ -255,22 +261,21 @@ async function start() {
         }
     ]);
 
-    let choice = initial.initChoice;
-    switch(choice) {
+    switch(initial.initChoice) {
         case 'Manage and create your posts':
-            await post.managePosts();
+            await managePosts();
             start();
             break;
         case 'Bid on an item':
-            await bid.makeBid();
+            await makeBid();
             start();
             break;
         case 'View bids you are winning':
-            await view.winning();
+            await winning();
             start();
             break;
         case 'Search for an item':
-            await search.locate();
+            await locate();
             start();
             break;
         case 'EXIT':
