@@ -1,8 +1,6 @@
 const mysql = require('mysql');
 const inquirer = require('inquirer');
-const cTable = require('console.table');
 const util = require('util');
-const loggedIn = require('../index');
 const { checkValue } = require('./validate');
 require('dotenv').config();
 let queryPromise;

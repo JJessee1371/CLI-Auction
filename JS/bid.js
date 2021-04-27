@@ -55,7 +55,7 @@ module.exports = {
                 await queryPromise('UPDATE auction_items SET bid = ?, topBidder = ? WHERE id = ?', [itemChoice.bid, loggedIn.currentUser.name, itemChoice.item]);
                 console.log(`Bid for ${itemChoice.bid} successfully posted!`);
             } else {
-                console.log(`Your bid must be higher than ${selected[0].bid} please try again`);
+                console.log(`Your bid must be higher than ${selected[0].bid} please try again.`);
                 create();
             }
         } catch(err) {

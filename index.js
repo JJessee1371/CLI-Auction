@@ -123,7 +123,7 @@ async function signup() {
                     password: newUser.password
                 });
                 adminAccess = false;
-                console.log('Congratulations you have successfully registered for an account!');
+                console.log('Congratulations your account has been registered!');
     
             //User follows either admin or regular signup path
             if(newUser.admin) {
@@ -219,7 +219,7 @@ async function login() {
                 console.log('Successfully logged in as an admin.');
                 await start();
             } else {
-                console.log('The password does not match our records');
+                console.log('The password does not match our records.');
                 await login();
             } 
         } else {
